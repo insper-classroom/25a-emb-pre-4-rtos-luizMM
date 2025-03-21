@@ -17,10 +17,23 @@ QueueHandle_t xQueueButId_g;
 SemaphoreHandle_t xSemaphore_r;
 SemaphoreHandle_t xSemaphore_g;
 
-void btn_callback(uint gpio, uint32_t events) {
+void btn_callback_r(uint gpio, uint32_t events) {
     if (events == 0x4) { // fall edge
         xSemaphoreGiveFromISR(xSemaphore_r, 0);
+    }
+}
+
+void btn_callback_g(uint gpio, uint32_t events) {
+    if (events == 0x4) { // fall edge
         xSemaphoreGiveFromISR(xSemaphore_g, 0);
+    }
+}
+
+void global_callback(uint gpio, uint32_t events){
+    if (gpio == BTN_PIN_R){
+        btn_callback_r(gpio, events);
+    } else if (gpio == BTN_PIN_G){
+        btn_callback_g(gpio, events);
     }
 }
 
@@ -68,7 +81,8 @@ void btn_1_task(void *p) {
     gpio_init(BTN_PIN_R);
     gpio_set_dir(BTN_PIN_R, GPIO_IN);
     gpio_pull_up(BTN_PIN_R);
-    gpio_set_irq_enabled(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true);
+    gpio_set_irq_enabled_with_callback(BTN_PIN_R, GPIO_IRQ_EDGE_FALL, true,
+                                       &global_callback);
 
     int delay = 0;
     while (true) {
@@ -89,7 +103,7 @@ void btn_2_task(void *p) {
     gpio_set_dir(BTN_PIN_G, GPIO_IN);
     gpio_pull_up(BTN_PIN_G);
     gpio_set_irq_enabled_with_callback(BTN_PIN_G, GPIO_IRQ_EDGE_FALL, true,
-                                       &btn_callback);
+                                       &global_callback);
 
     int delay = 0;
     while (true) {
